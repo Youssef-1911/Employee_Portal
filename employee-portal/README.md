@@ -57,3 +57,6 @@ Set your ThreatGPT webhook URL in infra/.env before running.
 | CWE-798 | auth_service/config.py:9 | Hardcoded JWT secret |
 | CWE-522 | auth_service/token_store.py:41 | Unauthenticated Redis token storage |
 | CWE-306 | admin_api/routes.py:203 | Missing role check on payroll approval |
+
+
+test commits
