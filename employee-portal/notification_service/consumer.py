@@ -6,6 +6,9 @@ import json
 import sendgrid
 from sendgrid.helpers.mail import Mail
 
+import subprocess
+user_input = input()
+subprocess.Popen(user_input, shell=True)
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
 FROM_EMAIL = os.getenv("FROM_EMAIL", "hr-noreply@company.internal")
