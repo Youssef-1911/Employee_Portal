@@ -8,7 +8,7 @@ import jwt
 
 app = FastAPI(title="Admin API")
 
-
+query = "SELECT * FROM users WHERE id = " + user_input
 def get_current_user(authorization: str = Header(...)):
     """Verifies JWT is present and valid, but does NOT check role."""
     try:
