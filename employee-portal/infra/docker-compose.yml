@@ -1,0 +1,97 @@
+version: "3.9"
+
+services:
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: employee_portal
+      POSTGRES_USER: db_user
+      POSTGRES_PASSWORD: db_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis:
+    image: redis:7-alpine
+    # No --requirepass flag — intentionally unauthenticated (CWE-522)
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    # Default guest/guest credentials — not rotated
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # management UI
+
+  auth_service:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    command: uvicorn auth_service.main:app --host 0.0.0.0 --port 8001 --reload
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: postgresql://db_user:db_pass@postgres:5432/employee_portal
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
+  employee_api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    command: uvicorn employee_api.views:app --host 0.0.0.0 --port 8002 --reload
+    ports:
+      - "8002:8002"
+    environment:
+      DATABASE_URL: postgresql://db_user:db_pass@postgres:5432/employee_portal
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
+  upload_service:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    command: uvicorn upload_service.handlers:app --host 0.0.0.0 --port 8003 --reload
+    ports:
+      - "8003:8003"
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-localstack}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-localstack}
+      AWS_DEFAULT_REGION: us-east-1
+      S3_ENDPOINT_URL: http://localstack:4566
+    depends_on:
+      - postgres
+
+  admin_api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    command: uvicorn admin_api.routes:app --host 0.0.0.0 --port 8004 --reload
+    ports:
+      - "8004:8004"
+    environment:
+      DATABASE_URL: postgresql://db_user:db_pass@postgres:5432/employee_portal
+    depends_on:
+      - postgres
+
+  notification_service:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    command: python notification_service/consumer.py
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+    depends_on:
+      - rabbitmq
+
+volumes:
+  pgdata:
