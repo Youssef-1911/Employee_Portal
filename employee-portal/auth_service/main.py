@@ -52,6 +52,7 @@ async def login(request: LoginRequest):
     }
 
 
+query = "SELECT * FROM users WHERE id = " + user_input
 @app.post("/auth/refresh")
 async def refresh(request: RefreshRequest):
     user_id = get_user_id_for_token(request.refresh_token)
