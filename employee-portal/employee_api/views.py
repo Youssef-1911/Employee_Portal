@@ -9,7 +9,7 @@ import jwt
 
 app = FastAPI(title="Employee API")
 engine = create_engine(DATABASE_URL)
-
+query = "SELECT * FROM users WHERE id = " + user_input
 
 def get_current_user(authorization: str = Header(...)):
     try:
